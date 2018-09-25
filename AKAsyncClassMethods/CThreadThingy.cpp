@@ -15,27 +15,31 @@ UINT ThreadMonitor (LPVOID pParam)
 	while (!done || activeThreads)
 	{
 		{ CLockCS lock (t->mutex);
-			std::set<HANDLE>::const_iterator it = t->setThreadHandles.begin();
-			while (it != t->setThreadHandles.end())
+
+			CThreadThingy::MapThreadHandles::const_iterator it = t->mapThreadHandles.begin();
+			while (it != t->mapThreadHandles.end())
 			{
-				HANDLE hThread = *it;
+				HANDLE hThread = it->first;
+				bool threadCompleted = it->second;
 
 				// Check for signal that thread has finished.
 				DWORD result = WaitForSingleObject (hThread, 0);
-				if (result == WAIT_FAILED)
+				if (result == WAIT_FAILED || threadCompleted)
 				{
 					// WAIT_FAILED occurs if handle is invalid, ie. thread finished.
-					it = t->setThreadHandles.erase (it);
+					it = t->mapThreadHandles.erase (it);
 					continue;
 				}
+
 				++it;
 			}
-			//cout << "No. active threads: " << setThreadHandles.size() << endl;
+
+			//cout << "No. active threads: " << mapThreadHandles.size() << endl;
 			done = t->finished;
-			activeThreads = t->setThreadHandles.size() > 0;
+			activeThreads = t->mapThreadHandles.size() > 0;
 
 			if (!activeThreads)
-				SetEvent (t->noThreadsRunning);
+				SetEvent (t->hEvent_NoThreadsRunning);
 		}
 		Sleep (1000);
 	}
@@ -50,8 +54,10 @@ UINT ThreadMonitor (LPVOID pParam)
 //-----------------------------------------------------------------------------
 // CThreadThingy implementation
 
-CThreadThingy::CThreadThingy()
+CThreadThingy::CThreadThingy() :
+finished (false), threadMonitorRunning (false)
 {
+	StartThreadMonitor();
 }
 
 CThreadThingy::~CThreadThingy()
@@ -60,11 +66,6 @@ CThreadThingy::~CThreadThingy()
 
 void CThreadThingy::PauseUntilAllThreadsFinished()
 {
-	{ CLockCS lock (mutex);
-		if (!threadMonitorRunning)
-			StartThreadMonitor();
-	}
-
-	noThreadsRunning = CreateEvent (NULL, FALSE, FALSE, NULL);
-	DWORD r = WaitForSingleObject (noThreadsRunning, INFINITE);
+	hEvent_NoThreadsRunning = CreateEvent (NULL, FALSE, FALSE, NULL);
+	DWORD r = WaitForSingleObject (hEvent_NoThreadsRunning, INFINITE);
 }

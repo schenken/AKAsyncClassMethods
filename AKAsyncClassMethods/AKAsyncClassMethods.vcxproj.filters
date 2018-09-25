@@ -27,6 +27,12 @@
     <ClInclude Include="CThreadThingy.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="CFred.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pch.cpp">
@@ -38,10 +44,19 @@
     <ClCompile Include="CThreadThingy.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="CFred.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Common.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="AKAsyncClassMethods.rc">
       <Filter>Resource Files</Filter>
     </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
   </ItemGroup>
 </Project>

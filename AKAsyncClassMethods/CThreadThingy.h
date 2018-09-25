@@ -4,11 +4,12 @@
 // to be executed asynchronously, ie. in a thread.
 
 #include <set>
+#include <map>
 
 //-----------------------------------------------------------------------------
 // Free functions.
 
-// Housekeeping to remove finished thread handles from setThreadHandles.
+// Housekeeping to remove finished thread handles from mapThreadHandles.
 UINT ThreadMonitor (LPVOID pParam);
 
 // Template method that resolves to the function executed by a thread (see method RunInThread).
@@ -18,16 +19,23 @@ UINT ThreadProc (LPVOID pParam)
 {
 	if (pParam != nullptr)
 	{
-		CThreadData<T, T1>* thrInfo = static_cast<CThreadData<T, T1>*>(pParam);
+		CThreadThingy::CThreadData<T, T1>* thrInfo = static_cast<CThreadThingy::CThreadData<T, T1>*>(pParam);
 
 		CThreadThingy* tt = thrInfo->tt;
 		tt->mutex.Acquire();
-		tt->setThreadHandles.insert (AfxGetThread()->m_hThread);
-		//cout << "setThreadHandles size: " << setThreadHandles.size() << endl;
+
+		HANDLE h = AfxGetThread()->m_hThread;
+		tt->mapThreadHandles[h] = false;
+
 		tt->mutex.Release();
 			
 		(thrInfo->obj->*thrInfo->func)(thrInfo->userData);
 		delete thrInfo;
+
+		// Explicitly mark thread as 'completed'.
+		tt->mutex.Acquire();
+		tt->mapThreadHandles[h] = true;
+		tt->mutex.Release();
 	}
 	return 0;
 };
@@ -59,7 +67,6 @@ public:
 
 class CThreadThingy
 {
-
 public:
 	CThreadThingy();
 	~CThreadThingy();
@@ -69,14 +76,15 @@ public:
 
 	// Dictionary of active threads. This exists to provide a means by which
 	// the main program can determine that all threads have completed before
-	// ending. Methods ThreadMonitor and WaitForAllThreadsToFinish are what
+	// ending. Methods ThreadMonitor and PauseUntilAllThreadsFinished are what
 	// control this.
-	std::set<HANDLE> setThreadHandles;
+	typedef std::map<HANDLE, bool> MapThreadHandles;
+	MapThreadHandles mapThreadHandles;
 
-	// For synchronising functions ThreadMonitor and WaitForAllThreadsToFinish.
-	HANDLE noThreadsRunning;
+	// For synchronising functions ThreadMonitor and PauseUntilAllThreadsFinished.
+	HANDLE hEvent_NoThreadsRunning;
 
-	// Set by WaitForAllThreadsToFinish to signal ThreadMonitor to finish.
+	// Set by StopThreadMonitor to signal ThreadMonitor to finish.
 	bool finished;
 
 	// Flag to indicate ThreadMonitor function is running.
@@ -103,8 +111,6 @@ public:
 	void Lock() { mutex.Acquire(); }
 
 	void Unlock() { mutex.Release(); }
-
-protected:
 
 	// Template class for holding user class/method/data. Essential data so
 	// we can execute the user class method and pass it custom data.
