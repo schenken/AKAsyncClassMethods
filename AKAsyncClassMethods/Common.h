@@ -25,7 +25,7 @@ struct RemoveWhitespace
 {
 	std::wstring s;
 	const WCHAR* pChar;
-	int sSize;
+	size_t sSize;
 
 	enum Mode { Leading = 1, Trailing = 2, All = 4, Condense = 8, LeadingTrailingCondense = 11 };
 

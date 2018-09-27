@@ -8,7 +8,7 @@ std::vector<std::wstring> Split(const std::wstring& line, const std::wstring& dl
 	std::wstring line2 = rmws(RemoveWhitespace::LeadingTrailingCondense);
 
 	std::size_t found = line2.find_first_of(dlim);
-	int prev = 0;
+	size_t prev = 0;
 	while (found != std::wstring::npos)
 	{
 		v.push_back(line2.substr(prev, found - prev));
